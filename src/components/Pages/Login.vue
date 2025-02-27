@@ -29,14 +29,12 @@ export default {
   },
   mounted(){
     this.$socketClient.on('user-profiles.getall.reply', data => {
-      console.log('users',data)
       this.userProfiles = data
     })
     this.$socketClient.emit('user-profiles.getall')
   },
   methods:{
     selectUser(user){
-      console.log(user)
       this.$socketClient.emit('user-profiles.select', user.uid)
     }
 

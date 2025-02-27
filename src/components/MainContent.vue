@@ -15,7 +15,7 @@ import { Vue, Component } from 'vue-property-decorator'
 export default class MainContent extends Vue {
 
   clickOverlay () {
-    this.$store.dispatch('clickMainOverlay')
+    this.$store.dispatch('hideSwipePanel')
   }
 
   get showOverlay()

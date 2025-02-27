@@ -43,7 +43,7 @@
 
 
       <div v-if="contentType == 'btnList' " class="btn-list small" :class="{small:contentConfig.compact}">
-        <div v-for=" (btn, idx) in contentConfig.buttons" :key="`btnlist-${id}-${idx}`">
+        <div v-for=" (btn, idx) in contentConfig.buttons" :key="`btnlist-${uid}-${idx}`">
           <div class="btn btn-circle btn-blue">
             <i class="fas fa-home" />
           </div>
@@ -83,17 +83,15 @@
 </template>
 
 <script>
-import { EventBus } from '@/configs/EventBus';
+import { Vue, Component, Prop } from 'vue-property-decorator'
+@Component()
+export default class Tile extends Vue {
+  @Prop({ default: {}}) config
 
-export default {
-  name: 'Tile',
-  props:{
-    config:{type:Object, default:()=>{return{}}}
-  },
-  data: function(){
+  data()
+  {
     return {
-      id: Date.now(),
-      isSelected: false,
+      uid: Date.now(),
       tileSize: '', //tile-2x
       iconType: 'icon',// 'icon' or 'raw'
       isIconClickable: false,
@@ -115,101 +113,108 @@ export default {
 
 
     }
-  },
+  }
+
+  get isSelected()
+  {
+    // return this.$store.getters.getSelectedComponent?.uid != this.uid
+    return false
+  }
+
   mounted () {
     this.parseConfig()
-    EventBus.$on('Tile.select', (config)=>{
-      if(config.id != this.id)this.isSelected = false
-    })
-    EventBus.$on('update-ui', () => {
-      this.parseConfig();
-    })
+
     this.$socketClient.on('calcDynamicValue.reply', ({ tileField, pageId, tileId, value}) => {
       console.log('calcDynamicValue.reply', { tileField, pageId, tileId, value})
-      if(this.id === tileId){
+      if(this.uid === tileId){
         this[tileField]= value
       }
     });
 
-  },
-  
-  methods:{
-    parseConfig (){
-      this.id = this.config.id;
-      this.tileSize = `tile-${this.config.size}x`;
-      this.iconType = this.config.iconType;
-      this.isIconClickable = this.config.isIconClickable;
-      this.settingIcon = `<i class="${this.config.settingIcon}"></i>`;
-      this.settingPanelType= this.config.settingPanelType;
-      this.contentType = this.config.contentType;
-      this.iconAction = this.config.iconAction;
-      this.contentConfig = this.config.contentConfig;
-      this.parseAllDynamicValue();
-    },
-    parseAllDynamicValue(){
-      this.title = this.parseDynamicValue('title', this.config.title);// todo: substring
-      this.subtitle = this.parseDynamicValue('subtitle', this.config.subtitle);// todo: substring
-      this.iconClass = 'tile-' + this.parseDynamicValue('iconClass', this.config.iconColor);
-      this.iconContent = this.iconType == 'icon' 
-        ? `<i class="${this.parseDynamicValue('iconContent', this.config.iconContent)}"></i>`
-        : this.parseDynamicValue('iconContent', this.config.iconContent);
+  }
 
-    },
-    parseDynamicValue(tileField, valueConfig){
-      if( typeof valueConfig === 'string') {
-        return valueConfig;
-      }else{
-        this.$socketClient.emit('calcDynamicValue', {
-          tileField: tileField,
-          pageId: this.$route.params.pageId,
-          tileId: this.id
-        })
-        return valueConfig.default
-      }
-    },
-
-    //-- Global functions
-    clickIcon () {
-      if(!this.isIconClickable) return false;
-    },
-    selectTile(){
-      this.isSelected = !this.isSelected;
-      EventBus.$emit('Tile.select', this.config);
-    },
-    clickSettings(){
-      this.selectTile()
-      EventBus.$emit('SwipePanel.open', 'component')
-    },
-    //-----
-
-
-    //-- Slider
-    sliderMouseDown (ev){
-      document.addEventListener('mousemove', this.sliderListener);
-      this.sliderXStart = ev.offsetX;
-    },
-    sliderMouseUp () {
-      document.removeEventListener('mousemove',  this.sliderListener);
-      if(this.sliderLazy){
-        // call slider action here
-      }
-    },
-    sliderListener (ev) {
-      let diff = ev.offsetX- this.sliderXStart;
-      this.sliderValue = Math.max(0, Math.min(this.sliderValue + (diff * 0.04) , 100)) 
-      if(!this.sliderLazy){
-        // call slider action here
-      }
-    },
-    //------
-
-
-
-
-
-
+  parseConfig (){
+    this.uid = this.config.uid;
+    this.tileSize = `tile-${this.config.size}x`;
+    this.iconType = this.config.iconType;
+    this.isIconClickable = this.config.isIconClickable;
+    this.settingIcon = `<i class="${this.config.settingIcon}"></i>`;
+    this.settingPanelType= this.config.settingPanelType;
+    this.contentType = this.config.contentType;
+    this.iconAction = this.config.iconAction;
+    this.contentConfig = this.config.contentConfig;
+    this.parseAllDynamicValue();
+  }
+  parseAllDynamicValue(){
+    this.title = this.parseDynamicValue('title', this.config.title);// todo: substring
+    this.subtitle = this.parseDynamicValue('subtitle', this.config.subtitle);// todo: substring
+    this.iconClass = 'tile-' + this.parseDynamicValue('iconClass', this.config.iconColor);
+    this.iconContent = this.iconType == 'icon' 
+      ? `<i class="${this.parseDynamicValue('iconContent', this.config.iconContent)}"></i>`
+      : this.parseDynamicValue('iconContent', this.config.iconContent);
 
   }
+  parseDynamicValue(tileField, valueConfig){
+    if( typeof valueConfig === 'string') {
+      return valueConfig;
+    }else{
+      this.$socketClient.emit('calcDynamicValue', {
+        tileField: tileField,
+        pageId: this.$route.params.pageId,
+        tileId: this.uid
+      })
+      return valueConfig.default
+    }
+  }
+
+  //-- Global functions
+  clickIcon ()
+  {
+    if(!this.isIconClickable) return false;
+  }
+
+  selectTile()
+  {
+
+  }
+
+  clickSettings()
+  {
+    this.$store.dispatch('selectComponent', this.config)
+    this.$store.dispatch('showSwipePanel', 'component')
+  }
+  //-----
+
+
+  //-- Slider
+  sliderMouseDown (ev)
+  {
+    document.addEventListener('mousemove', this.sliderListener);
+    this.sliderXStart = ev.offsetX;
+  }
+  sliderMouseUp ()
+  {
+    document.removeEventListener('mousemove',  this.sliderListener);
+    if(this.sliderLazy){
+      // call slider action here
+    }
+  }
+
+  sliderListener (ev)
+  {
+    let diff = ev.offsetX- this.sliderXStart;
+    this.sliderValue = Math.max(0, Math.min(this.sliderValue + (diff * 0.04) , 100)) 
+    if(!this.sliderLazy){
+      // call slider action here
+    }
+  }
+
+
+
+
+
+
+
 }
 </script>
 

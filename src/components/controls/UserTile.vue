@@ -13,37 +13,40 @@
 
 <script>
 import moment from 'moment'
+import { Vue, Component, props } from 'vue-property-decorator'
 
+@Component
+export default class UserTile extends Vue {
 
-export default {
-  name: 'UserTile',
-  props: {
-    userProfile: Object
-  },
-  data: function(){
+  get userProfile ()
+  {
+    return this.$store.getters.getUserProfile
+  }
+
+  data()
+  {
     return {
       isSelected: false,
       date:'',
       time:'',
 
     }
-  },
+  }
+
   mounted(){
     moment.locale('fr');
     this.init();
     setInterval(() => {
       this.init();
     }, 6000);
-  },
-
-  methods:{
-    init(){
-      this.date = moment().format("dddd Do MMMM YYYY");
-      this.time =  moment().format("HH:mm");
-    },
-
-
   }
+
+  init(){
+    this.date = moment().format("dddd Do MMMM YYYY");
+    this.time =  moment().format("HH:mm");
+  }
+
+
 
 }
 </script>

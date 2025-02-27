@@ -40,8 +40,6 @@
 
 <script>
 import axios from 'axios'
-import { EventBus } from '@/configs/EventBus';
-
 
 export default {
   name: 'WeatherTile',
@@ -89,8 +87,8 @@ export default {
         });
     },
     selectWeather(){
-      EventBus.$emit('Tile.select', {id:'000',title:'Weather',settingPanelType:'weather'});
-      EventBus.$emit('SwipePanel.open', 'component');
+      this.$store.dispatch('showSwipePanel', 'component')
+      this.$store.dispatch('selectComponent', {id:'000', title:'Weather', settingPanelType:'weather'})
     }
   }
 

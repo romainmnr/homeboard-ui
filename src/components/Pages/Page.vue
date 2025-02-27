@@ -1,7 +1,7 @@
 <template>
   <div class="page">
     <div class="grid">
-      <user-tile :user-profile="userProfile" />
+      <user-tile />
       <weather-tile />
     </div><!-- end of grid #1 -->
     <div class="grid">
@@ -15,26 +15,32 @@ import Tile from './../controls/Tile'
 import WeatherTile from '@/components/controls/WeatherTile'
 import UserTile from '@/components/controls/UserTile'
 
-export default {
-  name: 'Dashboard',
-  components:{
-    Tile, WeatherTile, UserTile
-  },
-  props: {   
-    userProfile: Object,
-    page: {type:Object, default:()=>{return {}}}
-  },
-  data: function(){
+import { Vue, Component } from 'vue-property-decorator'
+@Component({
+  components: {
+    Tile,
+    WeatherTile,
+    UserTile
+  }
+})
+export default class Page extends Vue {
+
+  data()
+  {
     return {
 
     }
-  },
+  }
+
   mounted(){
 
-  },
-  methods:{
-
   }
+
+  get page ()
+  {
+    return this.$store.getters.getPage
+  }
+
 
 }
 </script>

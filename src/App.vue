@@ -48,9 +48,6 @@ export default class App extends Vue {
     this.getCurrentPage()
   }
 
-  mounted(){
-    this.loadSite()
-  }
 
   data(){
     return {
@@ -76,11 +73,17 @@ export default class App extends Vue {
 
     this.$socketClient.on('user-profiles.select.reply', data => {
       this.$store.commit('setUserProfile', data)
-      this.$router.push({ name: 'page', params: { pageId: this.userProfile.dashboardPageId }})
+      if(this.$route.query.from){
+        this.$router.push({ path: this.$route.query.from})
+      }else{
+        this.$router.push({ name: 'page', params: { pageId: this.userProfile.dashboardPageId }})
+      }
     })
 
     this.$socketClient.on('user.logout', () => {
-      this.$router.push({ name: 'login' })
+      if (this.$route.name !== 'login') this.$router.push({ name: 'login', query: {
+        from: this.$route.fullPath
+      } })
     })
 
   }
@@ -91,9 +94,11 @@ export default class App extends Vue {
 
   getCurrentPage()
   {
-    this.currentPage = {}
-    this.$socketClient.emit('pages.get', this.$route.params.pageId);
-    this.$socketClient.emit('pages.getall')
+    if (this.$socketClient) 
+    {
+      this.$socketClient.emit('pages.get', this.$route.params.pageId);
+      this.$socketClient.emit('pages.getall')
+    }
   }
 
 

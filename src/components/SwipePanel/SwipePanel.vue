@@ -1,5 +1,5 @@
 <template>
-  <div class="swipe-panel" :class="{opened:isOpen}" :style="{bottom:bottomPos}">
+  <div class="swipe-panel" :class="{opened:isSwipePanelShown}" :style="{bottom:panelOffset}">
     <div
       class="drag-line"  
       @click="toggleMenu()" 
@@ -7,43 +7,42 @@
       @mouseup="stopDrag" />
 
     <div class="menu-header">
-      <div v-if="isOpen" class="page-title" v-html="panelTitle" />
+      <div v-if="isSwipePanelShown" class="page-title" v-html="panelTitle" />
       <div v-else class="btn btn-txt btn-black" @click="showSelectRoom()">
         <div v-html="currentPageLabel" />
         <i class="fas fa-chevron-up" />
       </div>
 
       <div class="blank" @click="toggleMenu()" />
-      <div class="linear-switch" :class="{'bg-grey-medium':isOpen}">
+      <div class="linear-switch" :class="{'bg-grey-medium':isSwipePanelShown}">
         <div 
           class="btn btn-circle btn-no-bg no-hover" 
-          :class="{active: activePanelContent=== 'component'}"
+          :class="{active: currentTab === 'component'}"
           @click="switchContent('component')">
           <i class="fas fa-box-open" />
         </div>
         <div 
           class="btn btn-circle btn-no-bg no-hover" 
-          :class="{active: activePanelContent=== 'page'}"
+          :class="{active: currentTab=== 'page'}"
           @click="switchContent('page')">
-          <i class="fas fa-th" />
+          <i class="fas fa-sliders-h" />
         </div>
         <div 
           class="btn btn-circle btn-no-bg no-hover" 
-          :class="{active: activePanelContent=== 'settings'}"
+          :class="{active: currentTab=== 'settings'}"
           @click="switchContent('settings') ">
-          <i class="fas fa-sliders-h" />
+          <i class="fas fa-th" />
         </div>
       </div>
     </div>
 
-    <swipe-panel-settings v-show="activePanelContent == 'settings' " />
-    <swipe-panel-page v-show="activePanelContent == 'page' " />
-    <swipe-panel-component v-show="activePanelContent == 'component' " />
+    <swipe-panel-settings v-show="currentTab == 'settings' " />
+    <swipe-panel-page v-show="currentTab == 'page' " />
+    <swipe-panel-component v-show="currentTab == 'component' " />
   </div>
 </template>
 
 <script>
-import { EventBus } from '@/configs/EventBus';
 import SwipePanelSettings from '@/components/SwipePanel/Panels/SwipePanelSettings'
 import SwipePanelPage from '@/components/SwipePanel/Panels/SwipePanelPage'
 import SwipePanelComponent from '@/components/SwipePanel/Panels/SwipePanelComponent'
@@ -66,75 +65,53 @@ export default class SwipePanel extends Vue {
   {
     return this.$store.getters.getUserProfile
   }
-  get isOpen(){
-    return this.bottomPos == '0px';
-  }
+
   get currentPageLabel(){
     return `<i class="${this.currentPage.icon}"></i> ${this.currentPage.name}`
   }
-  
-  data()
+  get isSwipePanelShown()
   {
-    return {
-      activePanelContent: '',
-      bottomPos:'0px',
-      panelTitle:'',
-      selectedComponent:{},
-    }
+    return this.$store.getters.isSwipePanelShown
   }
+  get panelOffset () 
+  {
+    return this.isSwipePanelShown ? '0px' : '-70vh'
+  }
+  get getSelectedComponent()
+  {
+    return this.$store.getters.getSelectedComponent
+  }
+  get currentTab()
+  {
+    return this.$store.getters.getSwipePanelTab
+  }
+  
 
-  mounted(){
-    this.closeMenu()
-    this.switchContent('settings')
-    
-    EventBus.$on('MainContent.clickOverlay', ()=>{
-      this.closeMenu()
-    })
-    EventBus.$on('SwipePanel.open', (tab)=>{
-      this.switchContent(tab);
-      this.openMenu();
-    })
-    EventBus.$on('Tile.select', (tileConfig)=>{
-      this.selectedComponent = tileConfig
-    })
-    
+  get panelTitle()
+  {
+    switch (this.currentTab) {
+      case 'settings': return '<i class="fas fa-sliders-h"></i> Settings';
+      case 'component': return `${this.currentPageLabel} <i class="fas fa-chevron-right"></i> ${this.getSelectedComponent ? this.getSelectedComponent.title: ''}`;
+      default: return this.currentPageLabel;
+    }
   }
 
   showSelectRoom () {
-    EventBus.$emit('SelectRoomDialog.show');
+    this.$store.dispatch('showSelectRoomDialog')
   }
-  switchContent(name){
-    this.activePanelContent = name;
-    switch (name) {
-      case 'settings':
-        this.panelTitle = '<i class="fas fa-sliders-h"></i> Settings';
-        break;
-      case 'component':
-        this.panelTitle = this.currentPageLabel +' <i class="fas fa-chevron-right"></i> '+ this.selectedComponent.title;
-        break;
-      default:
-        this.panelTitle = this.currentPageLabel;
-        break;
-    }
-    
 
-  }
+
   toggleMenu () {
-    if(this.isOpen){
-      this.closeMenu()
+    if(this.isSwipePanelShown){
+      this.$store.dispatch('hideSwipePanel')
     }else{
-      this.openMenu()
+      this.$store.dispatch('showSwipePanel')
     }
   }
-  openMenu(){
-    this.bottomPos= '0px';
-    EventBus.$emit('MainContent.toggleOverlay', true)
+  switchContent(tab)
+  {
+    this.$store.dispatch('setSwipePanelTab', tab)
   }
-  closeMenu(){
-    this.bottomPos=  '-70vh';
-    EventBus.$emit('MainContent.toggleOverlay', false)
-  }
-
 
   startDrag(){
     document.addEventListener('mousemove', this.moveCursor);
